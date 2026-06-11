@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Custas | SuporteADV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d0d0d; color: #e0e0e0; padding: 24px 16px; }
+  .container { max-width: 750px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #222; }
+  h1 { font-size: 1.5rem; color: #008080; margin-bottom: 6px; }
+  .subtitle { font-size: 0.88rem; color: #888; line-height: 1.5; }
+  .brand { font-size: 0.78rem; margin-top: 8px; color: #555; }
+  .brand span.s { color: #8B00FF; font-weight: 700; }
+  .brand span.a { color: #008080; font-weight: 700; }
+
+  .card { background: #111; border-radius: 10px; border: 1px solid #222; border-left: 3px solid #8B00FF; padding: 20px 22px; margin-bottom: 14px; }
+  .card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #008080; font-weight: 700; margin-bottom: 16px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 520px) { .form-grid { grid-column: 1fr; } }
+  .field.full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 0.78rem; color: #888; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field input, .field select {
+    width: 100%; padding: 9px 11px; border: 1.5px solid #333; border-radius: 6px;
+    font-size: 0.95rem; color: #fff; background: #1a1a1a; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: #008080; box-shadow: 0 0 0 2px rgba(0,128,128,0.2); }
+  .field select option { background: #1a1a1a; }
+
+  .info-box { background: #0d1a1a; border: 1px solid #1a3a3a; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; color: #666; line-height: 1.6; }
+  .info-box b { color: #008080; }
+
+  button.calcular { background: #008080; color: #fff; border: none; padding: 10px 26px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.07em; cursor: pointer; transition: background 0.18s; text-transform: uppercase; }
+  button.calcular:hover { background: #006666; box-shadow: 0 0 10px rgba(0,128,128,0.4); }
+
+  /* Resultado */
+  .resultado { background: #0a1a0a; border: 1px solid #1a4a1a; border-radius: 10px; padding: 20px 22px; margin-top: 14px; display: none; }
+  .resultado.visible { display: block; }
+  .resultado-titulo { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #008080; font-weight: 700; margin-bottom: 16px; }
+
+  .res-total-box { text-align: center; background: #111; border-radius: 10px; border: 1px solid #1a4a1a; padding: 20px; margin-bottom: 16px; }
+  .res-total-box label { display: block; font-size: 0.72rem; color: #555; text-transform: uppercase; margin-bottom: 8px; }
+  .res-total-box .v { font-size: 1.8rem; font-weight: 700; color: #00ff00; font-family: 'Courier New', monospace; }
+  .res-total-box .sub { font-size: 0.82rem; color: #555; margin-top: 6px; }
+
+  /* Itens de custo */
+  .custas-secao { margin-bottom: 14px; }
+  .cs-titulo { font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: #008080; padding: 4px 10px; background: #0a1a1a; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .custo-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #111; border-radius: 7px; margin-bottom: 5px; border-left: 3px solid #333; }
+  .custo-item.obrig { border-left-color: #008080; }
+  .custo-item.opc { border-left-color: #555; }
+  .custo-item.total { background: #0d1a0d; border-left-color: #00ff00; }
+  .custo-item.isento { opacity: 0.45; }
+  .ci-info { flex: 1; }
+  .ci-nome { font-size: 0.85rem; font-weight: 600; color: #ccc; }
+  .custo-item.total .ci-nome { color: #fff; font-weight: 700; }
+  .ci-base { font-size: 0.72rem; color: #444; margin-top: 2px; }
+  .ci-val { font-size: 0.95rem; font-weight: 700; font-family: 'Courier New', monospace; color: #008080; }
+  .custo-item.total .ci-val { color: #00ff00; font-size: 1.05rem; }
+  .ci-tag { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 10px; flex-shrink: 0; }
+  .ci-tag.obrig { background: #1a3a1a; color: #00ff00; }
+  .ci-tag.opc { background: #1a1a1a; color: #555; }
+  .ci-tag.isento { background: #1a1a3a; color: #8B00FF; }
+
+  /* Alerta gratuidade */
+  .grat-box { background: #0d1a0d; border: 1px solid #1a4a1a; border-radius: 8px; padding: 14px; margin-top: 12px; }
+  .grat-box .gb-t { font-size: 0.78rem; color: #00ff00; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .grat-box p { font-size: 0.82rem; color: #555; line-height: 1.6; }
+
+  /* Comparativo */
+  .comp-estados { margin-top: 14px; overflow-x: auto; }
+  .comp-estados summary { cursor: pointer; color: #555; font-size: 0.78rem; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 400px; }
+  th { text-align: left; color: #555; padding: 6px 8px; border-bottom: 1px solid #222; font-size: 0.72rem; text-transform: uppercase; }
+  td { color: #999; padding: 6px 8px; border-bottom: 1px solid #1a1a1a; }
+  tr:hover td { background: #151515; }
+  td.dest { color: #00ff00; font-weight: 700; font-family: 'Courier New', monospace; }
+  tr.selecionado td { background: #0a1a0a; color: #ccc; }
+
+  .erro { background: #1a0a0a; border: 1px solid #4a1a1a; border-radius: 8px; padding: 14px 16px; color: #ff6666; font-size: 0.88rem; margin-top: 14px; display: none; }
+  .erro.visible { display: block; }
+  .aviso { font-size: 0.72rem; color: #444; margin-top: 12px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Simulador de Custas</h1>
+    <p class="subtitle">Estime rapidamente o custo total de uma ação judicial — custas, honorários, perícias e despesas — antes de ajuizá-la.</p>
+    <p class="brand"><span class="s">suporte</span><span class="a">ADV</span>.br — Ferramentas para Advogados</p>
+  </div>
+
+  <div class="card">
+    <div class="info-box">
+      <b>Para que serve?</b> Ferramenta de planejamento financeiro para o advogado estimar todos os custos envolvidos em uma ação antes de apresentar o orçamento ao cliente. Inclui custas judiciais, honorários, perícias e outras despesas estimadas.
+    </div>
+
+    <div class="card-label">Dados da Ação</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Tipo de ação</label>
+        <select id="tipoAcao" onchange="atualizarCampos()">
+          <option value="civel">Cível (cobrança, indenização)</option>
+          <option value="trabalhista">Trabalhista</option>
+          <option value="familia">Família (divórcio, alimentos)</option>
+          <option value="previdenciario">Previdenciário (INSS)</option>
+          <option value="criminal">Criminal</option>
+          <option value="jec">Juizado Especial Cível (JEC)</option>
+          <option value="federal">Justiça Federal</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Estado / Tribunal</label>
+        <select id="estado">
+          <option value="BA">Bahia — TJBA</option>
+          <option value="SP">São Paulo — TJSP</option>
+          <option value="RJ">Rio de Janeiro — TJRJ</option>
+          <option value="MG">Minas Gerais — TJMG</option>
+          <option value="outros">Outro estado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor da causa (R$)</label>
+        <input type="number" id="valorCausa" placeholder="Ex: 50000" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Situação do cliente</label>
+        <select id="situacao">
+          <option value="normal">Normal — paga custas</option>
+          <option value="gratuidade">Gratuidade da Justiça</option>
+          <option value="fazenda">Fazenda Pública (isenta)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nº de réus para citar</label>
+        <input type="number" id="numReus" value="1" min="1" max="30">
+      </div>
+      <div class="field">
+        <label>Honorários advocatícios (R$)</label>
+        <input type="number" id="honorarios" placeholder="Ex: 5000" step="0.01" min="0" value="0">
+      </div>
+      <div class="field" id="wrap-pericia">
+        <label>Perícia estimada (R$)</label>
+        <input type="number" id="pericia" placeholder="0 se não houver" step="0.01" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>Outras despesas (R$)</label>
+        <input type="number" id="outras" placeholder="Translado, certidões..." step="0.01" min="0" value="0">
+      </div>
+    </div>
+    <button class="calcular" onclick="calcular()">SIMULAR CUSTAS</button>
+  </div>
+
+  <div class="erro" id="erro"></div>
+
+  <div class="resultado" id="resultado">
+    <div class="resultado-titulo" id="res-titulo">Simulação de Custas</div>
+
+    <div class="res-total-box">
+      <label>💰 Custo total estimado da ação</label>
+      <div class="v" id="res-total">—</div>
+      <div class="sub" id="res-sub">—</div>
+    </div>
+
+    <!-- Custas judiciais -->
+    <div class="custas-secao">
+      <div class="cs-titulo">Custas Judiciais</div>
+      <div id="sec-custas"></div>
+    </div>
+
+    <!-- Honorários -->
+    <div class="custas-secao" id="sec-hon-wrap">
+      <div class="cs-titulo">Honorários e Despesas</div>
+      <div id="sec-hon"></div>
+    </div>
+
+    <!-- Total -->
+    <div class="custo-item total" id="item-total">
+      <div class="ci-info"><div class="ci-nome">TOTAL ESTIMADO</div></div>
+      <div class="ci-val" id="total-val">—</div>
+    </div>
+
+    <div class="grat-box" id="grat-box" style="display:none">
+      <div class="gb-t">✅ Gratuidade da Justiça</div>
+      <p>Com a gratuidade concedida, as custas judiciais são isentas. Apenas honorários contratuais e despesas particulares (perícias, certidões etc.) permanecem a cargo do cliente.</p>
+    </div>
+
+    <details class="comp-estados">
+      <summary>Ver comparativo de custas por estado</summary>
+      <table>
+        <thead><tr><th>Estado</th><th>Taxa judiciária</th><th>+ Citação</th><th>Total judicial</th></tr></thead>
+        <tbody id="tabela-comp"></tbody>
+      </table>
+    </details>
+
+    <p class="aviso">⚠️ Valores estimados com base nas tabelas de referência dos tribunais. Confirme sempre os valores atualizados no site do tribunal competente antes do ajuizamento. Honorários e perícias variam conforme o caso.</p>
+  </div>
+
+</div>
+
+<script>
+const taxasJud = {
+  BA: { pct:0.02, min:50, max:3000, citacao:50, nome:'TJBA' },
+  SP: { pct:0.02, min:75, max:85373, citacao:43, nome:'TJSP' },
+  RJ: { pct:0.02, min:60, max:50000, citacao:55, nome:'TJRJ' },
+  MG: { pct:0.015, min:45, max:30000, citacao:48, nome:'TJMG' },
+  outros: { pct:0.02, min:55, max:20000, citacao:46, nome:'Tribunal' },
+};
+
+function fmtMoeda(v) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+function showErro(msg) {
+  document.getElementById('erro').textContent = msg;
+  document.getElementById('erro').classList.add('visible');
+  document.getElementById('resultado').classList.remove('visible');
+}
+function hideErro() { document.getElementById('erro').classList.remove('visible'); }
+
+function atualizarCampos() {
+  const tipo = document.getElementById('tipoAcao').value;
+  document.getElementById('wrap-pericia').style.opacity = ['civel','federal','trabalhista'].includes(tipo) ? '1' : '0.5';
+}
+
+function addItem(container, nome, base, valor, obrig, isento=false) {
+  const div = document.createElement('div');
+  const cls = isento ? 'custo-item isento' : `custo-item ${obrig ? 'obrig' : 'opc'}`;
+  div.className = cls;
+  div.innerHTML = `
+    <div class="ci-info">
+      <div class="ci-nome">${nome} <span class="ci-tag ${isento?'isento':obrig?'obrig':'opc'}">${isento?'Isento':obrig?'Obrigatório':'Estimado'}</span></div>
+      ${base ? `<div class="ci-base">${base}</div>` : ''}
+    </div>
+    <div class="ci-val">${isento ? 'Isento' : fmtMoeda(valor)}</div>`;
+  container.appendChild(div);
+}
+
+function calcular() {
+  hideErro();
+  const tipo = document.getElementById('tipoAcao').value;
+  const estado = document.getElementById('estado').value;
+  const valorCausa = parseFloat(document.getElementById('valorCausa').value);
+  if (!valorCausa || valorCausa <= 0) return showErro('Informe o valor da causa.');
+
+  const situacao = document.getElementById('situacao').value;
+  const numReus = parseInt(document.getElementById('numReus').value) || 1;
+  const honorarios = parseFloat(document.getElementById('honorarios').value) || 0;
+  const pericia = parseFloat(document.getElementById('pericia').value) || 0;
+  const outras = parseFloat(document.getElementById('outras').value) || 0;
+
+  const isento = situacao !== 'normal';
+  const isJEC = tipo === 'jec' && valorCausa <= 1518 * 20;
+  const isTrab = tipo === 'trabalhista';
+  const isPrev = tipo === 'previdenciario';
+
+  const tab = taxasJud[estado] || taxasJud.outros;
+
+  // Taxa judiciária
+  let taxa = 0;
+  if (!isento && !isJEC) {
+    if (isTrab) {
+      taxa = 0; // trabalhista paga ao final
+    } else {
+      taxa = Math.max(Math.min(valorCausa * tab.pct, tab.max), tab.min);
+    }
+  }
+
+  const citacao = (!isento && !isJEC && !isTrab) ? tab.citacao * numReus : 0;
+  const totalJudicial = taxa + citacao;
+  const totalDespesas = honorarios + pericia + outras;
+  const totalGeral = totalJudicial + totalDespesas;
+
+  // Render
+  const nomeTipos = { civel:'Cível', trabalhista:'Trabalhista', familia:'Família', previdenciario:'Previdenciário', criminal:'Criminal', jec:'Juizado Especial (JEC)', federal:'Justiça Federal' };
+  document.getElementById('res-titulo').textContent = `Custas — ${nomeTipos[tipo]} | ${tab.nome}`;
+  document.getElementById('res-total').textContent = fmtMoeda(totalGeral);
+  document.getElementById('res-sub').textContent = `${fmtMoeda(totalJudicial)} judicial + ${fmtMoeda(totalDespesas)} honorários/despesas`;
+
+  // Sec custas
+  const secC = document.getElementById('sec-custas');
+  secC.innerHTML = '';
+  if (isJEC) addItem(secC, 'Taxa judiciária (JEC até 20 SM)', 'Isento — causa dentro do limite', 0, true, true);
+  else if (isTrab) addItem(secC, 'Custas trabalhistas (2% da condenação)', 'Recolhidas ao final pelo condenado', 0, false, true);
+  else if (isento) addItem(secC, 'Taxa judiciária', 'Gratuidade da Justiça / Isenção', 0, true, true);
+  else addItem(secC, `Taxa judiciária (${(tab.pct*100).toFixed(1)}% sobre o valor)`, `Mín.: ${fmtMoeda(tab.min)} | Máx.: ${fmtMoeda(tab.max)}`, taxa, true);
+
+  if (!isento && !isJEC && !isTrab) {
+    addItem(secC, `Citação (${numReus} réu${numReus>1?'s':''} × ${fmtMoeda(tab.citacao)})`, 'Despesa de citação por réu', citacao, true);
+  }
+
+  // Sec honorários
+  const secH = document.getElementById('sec-hon');
+  secH.innerHTML = '';
+  if (honorarios > 0) addItem(secH, 'Honorários advocatícios contratuais', 'Conforme contrato', honorarios, false);
+  if (pericia > 0) addItem(secH, 'Perícia técnica (estimativa)', 'Varia conforme a área', pericia, false);
+  if (outras > 0) addItem(secH, 'Outras despesas', 'Certidões, cópias, translado etc.', outras, false);
+  if (honorarios === 0 && pericia === 0 && outras === 0) {
+    secH.innerHTML = '<p style="font-size:0.78rem;color:#444;padding:8px">Nenhuma despesa adicional informada.</p>';
+  }
+
+  document.getElementById('total-val').textContent = fmtMoeda(totalGeral);
+  document.getElementById('grat-box').style.display = isento ? '' : 'none';
+
+  // Comparativo estados
+  const tbody = document.getElementById('tabela-comp');
+  tbody.innerHTML = '';
+  Object.entries(taxasJud).forEach(([k, t]) => {
+    if (k === 'outros') return;
+    const tx = Math.max(Math.min(valorCausa * t.pct, t.max), t.min);
+    const cit = t.citacao * numReus;
+    const tot = tx + cit;
+    const tr = document.createElement('tr');
+    if (k === estado) tr.className = 'selecionado';
+    tr.innerHTML = `<td>${t.nome}${k===estado?' ◀':''}</td><td class="dest">${fmtMoeda(tx)}</td><td style="color:#555">${fmtMoeda(cit)}</td><td class="dest">${fmtMoeda(tot)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('resultado').classList.add('visible');
+}
+
+atualizarCampos();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const f = document.activeElement; if (f && (f.tagName==='INPUT'||f.tagName==='SELECT')) calcular(); }
+});
+</script>
+</body>
+</html>
